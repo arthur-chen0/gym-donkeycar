@@ -7,7 +7,7 @@ import os
 import subprocess
 
 
-class DonkeyUnityProcess:
+class DonkeyUnityProcess(object):
     def __init__(self):
         self.proc1 = None
 
