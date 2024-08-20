@@ -193,6 +193,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.n_steps_low_speed = 0
         self.min_speed = 1.0
         self.n_steps = 0
+        self.total_lap_time = 0.0
 
     def on_connect(self, client: SimClient) -> None:  # pytype: disable=signature-mismatch
         logger.debug("socket connected")
@@ -219,7 +220,8 @@ class DonkeyUnitySimHandler(IMesgHandler):
             self.last_lap_time = float(time_at_crossing - self.current_lap_time)
             self.current_lap_time = time_at_crossing
             self.lap_count += 1
-            lap_msg = f"New lap time: {round(self.last_lap_time, 2)} seconds"
+            self.total_lap_time += self.last_lap_time
+            lap_msg = f"New lap time: {round(self.last_lap_time, 2)} seconds, lap count: {self.lap_count}, average lap time: {round(self.total_lap_time / self.lap_count, 2)} seconds"
             logger.info(lap_msg)
             # Arthur add
             self.over = True
@@ -497,28 +499,28 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def calc_reward(self, done: bool) -> float:
         # Normalization factor, real max speed is around 30
         # but only attained on a long straight line
-        max_speed = 10
+        # max_speed = 10
 
         if done:
-            # return -1.0
-            return -15.0 - self.speed / max_speed
+            return -1.0
+            # return -15.0 - self.speed / max_speed
 
         if self.cte > self.max_cte:
-            # return -1.0
-            return -15.0
+            return -1.0
+            # return -15.0
 
         # Collision
         if self.hit != "none":
-            # return -2.0
-            return -15.0 - self.speed / max_speed
+            return -2.0
+            # return -15.0 - self.speed / max_speed
 
         # going fast close to the center of lane yeilds best reward
-        # if self.forward_vel > 0.0:
-        #     return (1.0 - (math.fabs(self.cte) / self.max_cte)) * self.forward_vel
+        if self.forward_vel > 0.0:
+            return (1.0 - (math.fabs(self.cte) / self.max_cte)) * self.forward_vel
 
         # in reverse, reward doesn't have centering term as this can result in some exploits
-        # return self.forward_vel
-        return (1.0 - (self.cte / self.max_cte) ** 2) * (self.speed / max_speed)
+        return self.forward_vel
+        # return (1.0 - (self.cte / self.max_cte) ** 2) * (self.speed / max_speed)
 
     # ------ Socket interface ----------- #
 
